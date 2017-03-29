@@ -13,17 +13,12 @@ define(function(){
 		},
  		publish : function(desc){
 			var event_name = this._getEventName(desc.channel, desc.topic);
-
-			this.ckeckEvent(event_name);
-
-			this.events[event_name].trigger(desc.data);
+			if (this.events[event_name]) this.events[event_name].trigger(desc.data);
 		},
 		subscribe : function(desc){
 			var event_name = this._getEventName(desc.channel, desc.topic);
 			this.ckeckEvent(event_name);
-			window.addEventListener(event_name, this.createCallback(desc.callback, desc.context), false);
-
-			return this.events[event_name];
+			return new this.Subscription(event_name, desc.callback, desc.context);
 		},
 		ckeckEvent : function(event_name){
 			if (!this.events[event_name]){
@@ -47,6 +42,15 @@ define(function(){
 			this.object = new CustomEvent(name, {
 				detail : this.custom
 			});
+		},
+		Subscription : function(event_name, callback, context){
+			this._event_name = event_name;
+			this._context = context || this;
+			this._callback = callback;
+
+			this._wrappedCB = this._wrappedCB.bind(this);
+
+			this.subscribe();
 		}
 	};
 
@@ -55,6 +59,24 @@ define(function(){
 			this.custom.data = data;
 			window.dispatchEvent(this.object);
 		},
+	};
+
+	nPostal.prototype.Subscription.prototype = {
+		subscribe : function(callback, context){
+			this._callback = callback || this._callback;
+			this._context  = context  || this._context;
+
+			window.addEventListener(this._event_name, this._wrappedCB, false);
+		},
+		unsubscribe : function(){
+			window.removeEventListener(this._event_name, this._wrappedCB, false);
+		},
+		resubscribe : function(callback, context){
+			this.subscribe(callback, context);
+		},
+		_wrappedCB : function(evt){
+			this._callback.call(this._context, evt.detail.data);
+		}
 	};
 
 	return new nPostal();
