@@ -11,6 +11,13 @@ define(function(){
 		_getEventName : function(channel, topic){
 			return channel + '::' + topic;
 		},
+		listen : function(theme, cb, context){
+			this.ckeckEvent(theme);
+			return new this.Subscription(theme, cb, context);
+		},
+		say : function(theme, data){
+			if (this.events[theme]) this.events[theme].trigger(data)
+		},
  		publish : function(desc){
 			var event_name = this._getEventName(desc.channel, desc.topic);
 			if (this.events[event_name]) this.events[event_name].trigger(desc.data);
@@ -56,7 +63,7 @@ define(function(){
 
 	nPostal.prototype.Event.prototype = {
 		trigger : function(data){
-			this.custom.data = data;
+			this.custom.data = data || null;
 			window.dispatchEvent(this.object);
 		},
 	};
