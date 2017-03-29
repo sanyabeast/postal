@@ -1,0 +1,11 @@
+{
+	"version" : "0.1.1-b",
+	"author" : {
+		"name" : "Alex",
+		"email" : "a.gvrnsk@gmail.com"
+	},
+	"repository" : { 
+	  	"type" : "git", 
+	  	"url" : "https://github.com/sanyabeast/nuPostal.git"
+	}
+}
