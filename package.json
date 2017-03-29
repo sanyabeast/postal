@@ -1,5 +1,6 @@
 {
 	"version" : "0.1.1-b",
+	"name" : "n-postal",
 	"author" : {
 		"name" : "Alex",
 		"email" : "a.gvrnsk@gmail.com"
