@@ -1,12 +1,18 @@
 {
-	"version" : "0.1.1-b",
-	"name" : "n-postal",
-	"author" : {
-		"name" : "Alex",
-		"email" : "a.gvrnsk@gmail.com"
-	},
-	"repository" : { 
-	  	"type" : "git", 
-	  	"url" : "https://github.com/sanyabeast/nuPostal.git"
-	}
+    "version": "0.1.2-b",
+    "name": "n-postal",
+    "author": {
+        "name": "Alex",
+        "email": "a.gvrnsk@gmail.com"
+    },
+    "scripts": {
+        "increase": "node node_modules/vpplus/vpplus.js increase-build"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/sanyabeast/nuPostal.git"
+    },
+    "dependencies": {
+        "vpplus": "git://github.com/sanyabeast/vpplus.git"
+    }
 }
