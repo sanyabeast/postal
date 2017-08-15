@@ -54,6 +54,7 @@
 
 		},
 		Event : function(name){
+			this.triggered = 0;
 			this.name = name;
 			this.custom = {
 				data : null
@@ -71,11 +72,22 @@
 			this._wrappedCB = this._wrappedCB.bind(this);
 
 			this.subscribe();
+		},
+		filterEvents : function(param, value){
+			var result = [];
+			for (var k in this.events){
+				if (this.events[k][param] == value){
+					result.push(this.events[k]);
+				}
+			}
+
+			return result;
 		}
 	};
 
 	postal.prototype.Event.prototype = {
 		trigger : function(data){
+			this.triggered++;
 			this.custom.data = data || null;
 			window.dispatchEvent(this.object);
 		},
