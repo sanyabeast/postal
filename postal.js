@@ -14,13 +14,13 @@
     }
 }(this, function(){
 
-	var nPostal = function(){
+	var postal = function(){
 		this.events = {
 
 		};
 	};
 
-	nPostal.prototype = {
+	postal.prototype = {
 		_getEventName : function(channel, topic){
 			return channel + '::' + topic;
 		},
@@ -74,14 +74,14 @@
 		}
 	};
 
-	nPostal.prototype.Event.prototype = {
+	postal.prototype.Event.prototype = {
 		trigger : function(data){
 			this.custom.data = data || null;
 			window.dispatchEvent(this.object);
 		},
 	};
 
-	nPostal.prototype.Subscription.prototype = {
+	postal.prototype.Subscription.prototype = {
 		subscribe : function(callback, context){
 			this._callback = callback || this._callback;
 			this._context  = context  || this._context;
@@ -99,6 +99,6 @@
 		}
 	};
 
-	return new nPostal();
+	return new postal();
 
 }));
