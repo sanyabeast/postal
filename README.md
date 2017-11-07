@@ -1,6 +1,6 @@
-# nuPostal
+# postal
 
-## Postal scheme 
+## Channel/topic scheme 
 
 ### Subscribing
 
