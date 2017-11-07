@@ -5,7 +5,7 @@
 ### Subscribing
 
 ```javascript
-bar subscription = postal.subscribe({
+var subscription = postal.subscribe({
   channel : "kek",
   topic : "lol",
   callback : function(data){
