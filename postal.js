@@ -14,13 +14,50 @@
     }
 }(this, function(){
 
-	var postal = function(){
+	var postal;
+
+	function genUUID(prefix){
+		return [prefix, Math.random().toString(32).substring(3, 12)].join("-");
+	};
+
+	var Postal = function(){
 		this.events = {
 
 		};
 	};
 
-	postal.prototype = {
+	var Emitter = function(channel){
+		this.channel = [channel, genUUID("emitter")].join("-");
+		this.subscribtions = {};
+	};
+
+	Emitter.prototype = {
+		on : function(){
+			return this.addEventListener.apply(this, arguments);
+		},
+		addEventListener : function(eventname, callback, context){
+			var uuid = genUUID("sub-" + eventname);
+			var sub = postal.subscribe({
+				channel : this.channel,
+				topic : eventname,
+				callback : callback,
+				context : context
+			});
+
+			this.subscribtions[eventname] = this.subscribtions[eventname] || {};
+			this.subscribtions[eventname][uuid] = sub;
+		},
+		dispatch : function(eventname, data){
+			postal.publish({
+				channel : this.channel,
+				topic : eventname,
+				data : data
+			});
+		},
+	};
+
+	Postal.prototype = {
+		Emitter : Emitter,
 		_getEventName : function(channel, topic){
 			return [channel, "::", topic].join("");
 		},
@@ -85,7 +122,7 @@
 		}
 	};
 
-	postal.prototype.Event.prototype = {
+	Postal.prototype.Event.prototype = {
 		trigger : function(data){
 			this.triggered++;
 			this.custom.data = data || null;
@@ -93,7 +130,7 @@
 		},
 	};
 
-	postal.prototype.Subscription.prototype = {
+	Postal.prototype.Subscription.prototype = {
 		subscribe : function(callback, context){
 			this._callback = callback || this._callback;
 			this._context  = context  || this._context;
@@ -111,6 +148,8 @@
 		}
 	};
 
-	return new postal();
+	postal = new Postal();
+
+	return postal;
 
 }));
