@@ -1,26 +1,20 @@
 "use strict";
-(function (root, factory) {
-    if (typeof define === "function" && define.amd) {
-        // AMD. Register as an anonymous module.
-        define(factory);
-    } else if (typeof module === "object" && module.exports) {
-        // Node. Does not work with strict CommonJS, but
-        // only CommonJS-like environments that support module.exports,
-        // like Node.
-        module.exports = factory(true);
-    } else {
-    	var postal = factory();
-    	window.postal = postal;
-    }
-}(this, function(){
-
-	var postal;
+define(function(){
+	var _postal;
+	var eventContext = document.createElement("div");
 
 	function genUUID(prefix){
 		return [prefix, Math.random().toString(32).substring(3, 12)].join("-");
 	};
 
 	var Postal = function(){
+		if (_postal instanceof Postal){
+			return _postal;
+		}
+
+		_postal = this;
+		console.log("new postal instance created");
+
 		this.events = {
 
 		};
@@ -57,29 +51,35 @@
 	};
 
 	Postal.prototype = {
+		set eventContext(context){
+			eventContext = context;
+		},
+		get eventContext(){
+			return eventContext;
+		},
 		Emitter : Emitter,
 		_getEventName : function(channel, topic){
 			return [channel, "::", topic].join("");
 		},
-		listen : function(theme, cb, context){
+		listen : function(theme, cb, context, _eventContext){
 			this.ckeckEvent(theme);
-			return new this.Subscription(theme, cb, context);
+			return new this.Subscription(theme, cb, context, _eventContext);
 		},
-		say : function(theme, data){
-			if (this.events[theme]) this.events[theme].trigger(data)
+		say : function(theme, data, _eventContext){
+			if (this.events[theme]) this.events[theme].trigger(data, _eventContext)
 		},
  		publish : function(desc){
 			var event_name = this._getEventName(desc.channel, desc.topic);
-			if (this.events[event_name]) this.events[event_name].trigger(desc.data);
+			if (this.events[event_name]) this.events[event_name].trigger(desc.data, desc.eventContext);
 		},
 		subscribe : function(desc){
 			var event_name = this._getEventName(desc.channel, desc.topic);
-			this.ckeckEvent(event_name);
-			return new this.Subscription(event_name, desc.callback, desc.context);
+			this.ckeckEvent(event_name, desc.eventContext);
+			return new this.Subscription(event_name, desc.callback, desc.context, desc.eventContext);
 		},
-		ckeckEvent : function(event_name){
+		ckeckEvent : function(event_name, eventContext){
 			if (!this.events[event_name]){
-				this.events[event_name] = new this.Event(event_name)
+				this.events[event_name] = new this.Event(event_name, eventContext)
 			}
 		},
 		createCallback : function(userCB, context){
@@ -90,7 +90,9 @@
 			}
 
 		},
-		Event : function(name){
+		Event : function(name, _eventContext){
+			this._eventContext = _eventContext || eventContext;
+
 			this.triggered = 0;
 			this.name = name;
 			this.custom = {
@@ -101,10 +103,11 @@
 				detail : this.custom
 			});
 		},
-		Subscription : function(event_name, callback, context){
+		Subscription : function(event_name, callback, context, _eventContext){
 			this._event_name = event_name;
 			this._context = context || this;
 			this._callback = callback;
+			this._eventContext = _eventContext || eventContext;
 
 			this._wrappedCB = this._wrappedCB.bind(this);
 
@@ -123,10 +126,10 @@
 	};
 
 	Postal.prototype.Event.prototype = {
-		trigger : function(data){
+		trigger : function(data, _eventContext){
 			this.triggered++;
 			this.custom.data = data || null;
-			window.dispatchEvent(this.object);
+			(_eventContext || this._eventContext).dispatchEvent(this.object);
 		},
 	};
 
@@ -135,10 +138,10 @@
 			this._callback = callback || this._callback;
 			this._context  = context  || this._context;
 
-			window.addEventListener(this._event_name, this._wrappedCB, false);
+			this._eventContext.addEventListener(this._event_name, this._wrappedCB, false);
 		},
 		unsubscribe : function(){
-			window.removeEventListener(this._event_name, this._wrappedCB, false);
+			this._eventContext.removeEventListener(this._event_name, this._wrappedCB, false);
 		},
 		resubscribe : function(callback, context){
 			this.subscribe(callback, context);
@@ -148,8 +151,6 @@
 		}
 	};
 
-	postal = new Postal();
+	return new Postal();
 
-	return postal;
-
-}));
+});
