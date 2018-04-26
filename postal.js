@@ -15,9 +15,23 @@ define(function(){
 		_postal = this;
 		console.log("new postal instance created");
 
-		this.events = {
+		this.events = {};
+		this.storage = {};
 
-		};
+		var funcy = function(theme, value){
+			if (typeof value === "undefined"){
+				return this.get(theme);
+			} else {
+				return this.set(theme, value);
+			}
+		}.bind(this);
+
+		for (var k in this){
+			funcy[k]= this[k];
+		}
+
+		return funcy;
+
 	};
 
 	var Emitter = function(channel){
@@ -66,20 +80,22 @@ define(function(){
 			return new this.Subscription(theme, cb, context, _eventContext);
 		},
 		say : function(theme, data, _eventContext){
+			this.storage[theme] = data;
 			if (this.events[theme]) this.events[theme].trigger(data, _eventContext)
 		},
  		publish : function(desc){
-			var event_name = this._getEventName(desc.channel, desc.topic);
-			if (this.events[event_name]) this.events[event_name].trigger(desc.data, desc.eventContext);
+			var theme = this._getEventName(desc.channel, desc.topic);
+			this.storage[theme] = desc.data;
+			if (this.events[theme]) this.events[theme].trigger(desc.data, desc.eventContext);
 		},
 		subscribe : function(desc){
-			var event_name = this._getEventName(desc.channel, desc.topic);
-			this.ckeckEvent(event_name, desc.eventContext);
-			return new this.Subscription(event_name, desc.callback, desc.context, desc.eventContext);
+			var theme = this._getEventName(desc.channel, desc.topic);
+			this.ckeckEvent(theme, desc.eventContext);
+			return new this.Subscription(theme, desc.callback, desc.context, desc.eventContext);
 		},
-		ckeckEvent : function(event_name, eventContext){
-			if (!this.events[event_name]){
-				this.events[event_name] = new this.Event(event_name, eventContext)
+		ckeckEvent : function(theme, eventContext){
+			if (!this.events[theme]){
+				this.events[theme] = new this.Event(theme, eventContext)
 			}
 		},
 		createCallback : function(userCB, context){
@@ -103,8 +119,8 @@ define(function(){
 				detail : this.custom
 			});
 		},
-		Subscription : function(event_name, callback, context, _eventContext){
-			this._event_name = event_name;
+		Subscription : function(theme, callback, context, _eventContext){
+			this._event_name = theme;
 			this._context = context || this;
 			this._callback = callback;
 			this._eventContext = _eventContext || eventContext;
@@ -122,6 +138,76 @@ define(function(){
 			}
 
 			return result;
+		},
+		extract : function(desc){
+			var theme = this._getEventName(desc.channel, desc.topic);
+			return this.get(theme);
+		},
+		inject : function(desc){
+			var theme = this._getEventName(desc.channel, desc.topic);
+			this.set(theme, desc.data);
+		},	
+		get : function(theme){
+			return this.storage[theme];
+		},
+		set : function(theme, data){
+			this.say(theme, data);
+		},
+		on : function(theme, eventName, callback, immediately){
+			if (typeof eventName == "function"){
+				immediately = callback;
+				callback = eventName;
+			}
+
+			var result =  this.listen(theme, callback);
+			if (immediately == true){
+				callback(this.storage[theme]);
+			}
+
+			return result;
+
+		},
+		off : function(subscription){
+			if (subscription){
+				subscription.unsubscribe();
+			}
+		},
+		restObject : function(basePath, data, options){
+			basePath = basePath || "";
+			options = options || { deep : false };
+
+			if (options.deep === false){
+				for (var k in data){
+					this.set(basePath + "::" + k, data[k]);
+				}
+			} else {
+				for (var k in data){
+					if (typeof data[k] == "object"){
+						this.restObject(basePath + "." + k, data[k]);
+					} else {
+						this.set(basePath + "::" + k, data[k]);
+					}
+				}
+				
+			}
+
+		},
+		reach : function(source, path){
+		  	var result = source;
+		  	path = path.split(".");
+	
+		  	for (var a = 0; a < path.length; a++){
+		  	    if (typeof result[path[a]] != "undefined"){
+		  	      result = result[path[a]];
+		  	    } else {
+		  	      return null;
+		  	    }
+		  	}
+	
+		  	return result;
+		},
+		path : function(){
+			console.log("path", arguments, this.storage);
 		}
 	};
 
@@ -148,7 +234,8 @@ define(function(){
 		},
 		_wrappedCB : function(evt){
 			this._callback.call(this._context, evt.detail.data);
-		}
+		},
+
 	};
 
 	return new Postal();
