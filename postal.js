@@ -81,13 +81,27 @@ define(function(){
 			return new this.Subscription(theme, cb, context, _eventContext);
 		},
 		say : function(theme, data, _eventContext){
-			this.storage[theme] = data;
+			if (typeof data == "function" && _eventContext === true){
+				_eventContext = null;
+				Object.defineProperty(this.storage, theme, {
+					get : data,
+					configurable : true,
+				});
+
+				data = data();
+			} else {
+				Object.defineProperty(this.storage, theme, {
+					value : data,
+					configurable : true,
+					writable : true
+				});
+			}
+			
 			if (this.events[theme]) this.events[theme].trigger(data, _eventContext)
 		},
  		publish : function(desc){
 			var theme = this._getEventName(desc.channel, desc.topic);
-			this.storage[theme] = desc.data;
-			if (this.events[theme]) this.events[theme].trigger(desc.data, desc.eventContext);
+			this.say(theme, desc.data, desc.eventContext);
 		},
 		subscribe : function(desc){
 			var theme = this._getEventName(desc.channel, desc.topic);
