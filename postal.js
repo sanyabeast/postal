@@ -17,6 +17,7 @@ define(function(){
 
 		this.events = {};
 		this.storage = {};
+		this.subscribtions = {};
 
 		var funcy = function(theme, value){
 			if (typeof value === "undefined"){
@@ -160,7 +161,7 @@ define(function(){
 			}
 
 			var result =  this.listen(theme, callback);
-			if (immediately == true){
+			if (immediately == true && typeof this.storage[theme] != "undefined"){
 				callback(this.storage[theme]);
 			}
 
@@ -170,6 +171,10 @@ define(function(){
 		off : function(subscription){
 			if (subscription){
 				subscription.unsubscribe();
+			} else {
+				if (window.__DEBUG){
+					console.warn(new Error("[postal] cannot unsubscribe"));
+				}
 			}
 		},
 		restObject : function(basePath, data, options){
