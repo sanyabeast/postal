@@ -80,6 +80,13 @@ define(function(){
 			this.ckeckEvent(theme);
 			return new this.Subscription(theme, cb, context, _eventContext);
 		},
+		once : function(theme, cb, context, _eventContext){
+			this.ckeckEvent(theme);
+			var sub = new this.Subscription(theme, function(){
+				sub.unsubscribe();
+				cb.apply(this, arguments);
+			}, context, _eventContext);
+		},
 		say : function(theme, data, _eventContext){
 			if (typeof data == "function" && _eventContext === true){
 				_eventContext = null;
@@ -100,10 +107,12 @@ define(function(){
 			if (this.events[theme]) this.events[theme].trigger(data, _eventContext)
 		},
  		publish : function(desc){
+ 			// console.warn(new Error("postal publish"));
 			var theme = this._getEventName(desc.channel, desc.topic);
 			this.say(theme, desc.data, desc.eventContext);
 		},
 		subscribe : function(desc){
+			// console.warn(new Error("postal subscribe"));
 			var theme = this._getEventName(desc.channel, desc.topic);
 			this.ckeckEvent(theme, desc.eventContext);
 			return new this.Subscription(theme, desc.callback, desc.context, desc.eventContext);
@@ -227,7 +236,7 @@ define(function(){
 		},
 		path : function(){
 			console.log("path", arguments, this.storage);
-		}
+		},
 	};
 
 	Postal.prototype.Event.prototype = {
