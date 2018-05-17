@@ -80,13 +80,6 @@ define(function(){
 			this.ckeckEvent(theme);
 			return new this.Subscription(theme, cb, context, _eventContext);
 		},
-		once : function(theme, cb, context, _eventContext){
-			this.ckeckEvent(theme);
-			var sub = new this.Subscription(theme, function(){
-				sub.unsubscribe();
-				cb.apply(this, arguments);
-			}, context, _eventContext);
-		},
 		say : function(theme, data, _eventContext){
 			if (typeof data == "function" && _eventContext === true){
 				_eventContext = null;
@@ -177,12 +170,7 @@ define(function(){
 		set : function(theme, data){
 			this.say(theme, data);
 		},
-		on : function(theme, eventName, callback, immediately){
-			if (typeof eventName == "function"){
-				immediately = callback;
-				callback = eventName;
-			}
-
+		on : function(theme, callback, immediately){
 			var result =  this.listen(theme, callback);
 			if (immediately == true && typeof this.storage[theme] != "undefined"){
 				callback(this.storage[theme]);
@@ -190,6 +178,15 @@ define(function(){
 
 			return result;
 
+		},
+		once : function(theme, callback, immediately){
+			this.ckeckEvent(theme);
+			var sub = this.on(theme, function(data){
+				sub.unsubscribe();
+				callback(data);
+			}, immediately);
+
+			return sub;
 		},
 		off : function(subscription){
 			if (subscription){
