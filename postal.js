@@ -17,7 +17,23 @@ define(function(){
 
 		this.events = {};
 		this.storage = {};
-		this.subscribtions = {};
+		this.subs = {};
+		this.stack = [];
+
+		this.__paused = false;
+
+		Object.defineProperty(this.subs, "length", {
+			get : function(){
+				var result = 0;
+				for (var k in this){
+					result++;
+				}
+
+				return result;
+			},
+			enumerable : false,
+			configurable : false
+		});
 
 		var funcy = function(theme, value){
 			if (typeof value === "undefined"){
@@ -37,7 +53,7 @@ define(function(){
 
 	var Emitter = function(channel){
 		this.channel = [channel, genUUID("emitter")].join("-");
-		this.subscribtions = {};
+		this.subs = {};
 	};
 
 	Emitter.prototype = {
@@ -45,16 +61,12 @@ define(function(){
 			return this.addEventListener.apply(this, arguments);
 		},
 		addEventListener : function(eventname, callback, context){
-			var uuid = genUUID("sub-" + eventname);
 			var sub = postal.subscribe({
 				channel : this.channel,
 				topic : eventname,
 				callback : callback,
 				context : context
 			});
-
-			this.subscribtions[eventname] = this.subscribtions[eventname] || {};
-			this.subscribtions[eventname][uuid] = sub;
 		},
 		dispatch : function(eventname, data){
 			postal.publish({
@@ -78,7 +90,7 @@ define(function(){
 		},
 		listen : function(theme, cb, context, _eventContext){
 			this.ckeckEvent(theme);
-			return new this.Subscription(theme, cb, context, _eventContext);
+			return new this.Subscription(this, theme, cb, context, _eventContext);
 		},
 		say : function(theme, data, _eventContext){
 			if (typeof data == "function" && _eventContext === true){
@@ -108,11 +120,11 @@ define(function(){
 			// console.warn(new Error("postal subscribe"));
 			var theme = this._getEventName(desc.channel, desc.topic);
 			this.ckeckEvent(theme, desc.eventContext);
-			return new this.Subscription(theme, desc.callback, desc.context, desc.eventContext);
+			return new this.Subscription(this, theme, desc.callback, desc.context, desc.eventContext);
 		},
 		ckeckEvent : function(theme, eventContext){
 			if (!this.events[theme]){
-				this.events[theme] = new this.Event(theme, eventContext)
+				this.events[theme] = new this.Event(this, theme, eventContext)
 			}
 		},
 		createCallback : function(userCB, context){
@@ -123,9 +135,10 @@ define(function(){
 			}
 
 		},
-		Event : function(name, _eventContext){
+		Event : function(postal, name, _eventContext){
 			this._eventContext = _eventContext || eventContext;
 
+			this._postal = postal;
 			this.triggered = 0;
 			this.name = name;
 			this.custom = {
@@ -136,7 +149,9 @@ define(function(){
 				detail : this.custom
 			});
 		},
-		Subscription : function(theme, callback, context, _eventContext){
+		Subscription : function(postal, theme, callback, context, _eventContext){
+			this._uuid = genUUID(theme);
+			this._postal = postal;
 			this._event_name = theme;
 			this._context = context || this;
 			this._callback = callback;
@@ -234,6 +249,32 @@ define(function(){
 		path : function(){
 			console.log("path", arguments, this.storage);
 		},
+		$reset : function(){
+			this.$unsubscribeAll();
+
+			this.subs = {};
+
+			for (var k in this.events){
+				delete this.events[k];
+			}
+
+			return this;
+		},
+		$unsubscribeAll : function(){
+			for (var k in this.subs){
+				this.subs[k].unsubscribe(true);
+			}
+
+			return this;
+		},
+		$resusbscribeAll : function(){
+			for (var k in this.subs){
+				this.subs[k].subscribe();
+			}
+		},
+		$pause : function(key){
+			this.__paused = !!key;
+		}
 	};
 
 	Postal.prototype.Event.prototype = {
@@ -246,12 +287,17 @@ define(function(){
 
 	Postal.prototype.Subscription.prototype = {
 		subscribe : function(callback, context){
+			this._postal.subs[this._uuid] = this;
 			this._callback = callback || this._callback;
 			this._context  = context  || this._context;
 
 			this._eventContext.addEventListener(this._event_name, this._wrappedCB, false);
 		},
-		unsubscribe : function(){
+		unsubscribe : function(keep){
+			if (keep !== true){
+				delete this._postal.subs[this._uuid];
+			}
+
 			this._eventContext.removeEventListener(this._event_name, this._wrappedCB, false);
 		},
 		resubscribe : function(callback, context){
