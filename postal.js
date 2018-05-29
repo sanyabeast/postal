@@ -1,6 +1,7 @@
 "use strict";
 define(function(){
 	var _postal;
+	var _globalEvents = [];
 	var eventContext = document.createElement("div");
 
 	function genUUID(prefix){
@@ -78,6 +79,13 @@ define(function(){
 	};
 
 	Postal.prototype = {
+		set globalEvents(v){
+			_globalEvents = _globalEvents.concat(v);
+
+		},
+		get globalEvents(){
+			return _globalEvents;
+		},
 		set eventContext(context){
 			eventContext = context;
 		},
@@ -282,6 +290,9 @@ define(function(){
 			this.triggered++;
 			this.custom.data = data || null;
 			(_eventContext || this._eventContext).dispatchEvent(this.object);
+			if (this._postal.globalEvents.indexOf(this.name) > -1){
+				window.dispatchEvent(this.object);
+			}
 		},
 	};
 
