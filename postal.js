@@ -275,6 +275,14 @@ define(function(){
 
 			return this;
 		},
+		unsubscribeWithRegExp : function(regExpString){
+			for (var k in this.subs){
+				if (k.match(new RegExp(regExpString))){
+					this.subs[k].unsubscribe();
+					delete this.subs[k];
+				}
+			}
+		},
 		$resusbscribeAll : function(){
 			for (var k in this.subs){
 				this.subs[k].subscribe();
