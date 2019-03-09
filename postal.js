@@ -48,6 +48,8 @@ define(function(){
 			funcy[k]= this[k];
 		}
 
+		this.unsubscribeWithRegExp = this.unsubscribeWithRegExp.bind(this)
+
 		return funcy;
 
 	};
@@ -106,6 +108,7 @@ define(function(){
 				Object.defineProperty(this.storage, theme, {
 					get : data,
 					configurable : true,
+					enumerable: true
 				});
 
 				data = data();
@@ -113,7 +116,8 @@ define(function(){
 				Object.defineProperty(this.storage, theme, {
 					value : data,
 					configurable : true,
-					writable : true
+					writable : true,
+					enumerable: true
 				});
 			}
 			
@@ -277,9 +281,17 @@ define(function(){
 		},
 		unsubscribeWithRegExp : function(regExpString){
 			for (var k in this.subs){
-				if (k.match(new RegExp(regExpString))){
+				if (k.match(new RegExp(regExpString, "gm"))){
 					this.subs[k].unsubscribe();
 					delete this.subs[k];
+				}
+			}
+
+			for (var p in this.storage){
+				// console.log(p, regExpString)
+				if (p.match(new RegExp(regExpString, "gm"))){
+					// this.subs[p].unsubscribe();
+					delete this.storage[p];
 				}
 			}
 		},
@@ -310,13 +322,14 @@ define(function(){
 			this._callback = callback || this._callback;
 			this._context  = context  || this._context;
 
+			this._wrappedCB.kek = 1;
 			this._eventContext.addEventListener(this._event_name, this._wrappedCB, false);
 		},
 		unsubscribe : function(keep){
 			if (keep !== true){
 				delete this._postal.subs[this._uuid];
 			}
-
+			console.log(this._wrappedCB.kek)
 			this._eventContext.removeEventListener(this._event_name, this._wrappedCB, false);
 		},
 		resubscribe : function(callback, context){
